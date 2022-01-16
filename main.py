@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-#encoding: utf-8
-
-
 '''The Yara API Challenge
 Instrucciones :
 Como equipo de seguridad informática tenemos la necesidad de buscar en textos y binarios algunos 
@@ -25,11 +21,7 @@ Framework:Flask Api'''
 import collections
 import datetime
 import json
-#from os import extsep, sep
-
-#from pickle import TRUE
-#from tkinter.messagebox import RETRY
-import yara 
+import yara
 import bbddsqlite3
 
 from flask import Flask, request
@@ -45,9 +37,7 @@ app.config['UPLOAD_FOLDER'] = './Archivos'
 
 from datetime import date
 
-'''
-Primer Endpoint /api/rule
-'''
+'''Primer Endpoint /api/rule'''
 #Endpoint #1 
 #en el sigueinte Endpoint se ingresara una regla Yara, cumpliendo con los parametros indicados:
 '''
@@ -75,8 +65,7 @@ def rule():
                 aux=True
             except Exception:
                 aux=False
-                return json.dumps({'status': 'ok', 'error': 'Problema al compilar Regla Yara'}), status.HTTP_400_BAD_REQUEST
-                    
+                return json.dumps({'status': 'ok', 'error': 'Problema al compilar Regla Yara'}), status.HTTP_400_BAD_REQUEST      
             #control de error en compilacion de Match en regla Yara
             if aux:
                 try:
@@ -118,7 +107,7 @@ def rule():
             return json.dumps({'status': 'fail', 'results': 'Cantidad de parametros incorrectos'}), status.HTTP_400_BAD_REQUEST # error 500
 
     except Exception:
-        return json.dumps({'status': 'fail', 'results': 'Parametros incorrectos'}), status.HTTP_400_BAD_REQUEST # error 500
+        return json.dumps({'status': 'fail', 'results': 'Parametros incorrectos'}),status.HTTP_400_BAD_REQUEST # error 500
 
 #OK
 @app.route('/api/analyze/text', methods=['POST'])
@@ -132,7 +121,7 @@ def analyzetext():
                 aux=True
             else:
                 aux=False
-                return json.dumps({'status': 'fail', 'results': 'error en datos de ingreso'}), status.HTTP_400_BAD_REQUEST
+                return json.dumps({'status': 'fail', 'results': 'error en datos de ingreso'}),status.HTTP_400_BAD_REQUEST
             
             con=bbddsqlite3.sql_connection()
             cursorObj = con.cursor()
@@ -148,11 +137,11 @@ def analyzetext():
                             rule=yara.compile(source=regla_yara) 
                             matches=rule.match(data=record.get("text", "")) #validar match de regla 
                             if len(matches) > 0:  
-                                resultados.append({'rule_id': item['rule_id'], 'matched': True})
+                                resultados.append({'rule_id':item['rule_id'],'matched': True})
                                 #regla existe y match
                             else:
                                 
-                                resultados.append({'rule_id': item['rule_id'], 'matched': False})#regla existe y no match
+                                resultados.append({'rule_id':item['rule_id'],'matched': False})#regla existe y no match
                     else:
                         resultados.append({'rule_id': item['rule_id'], 'matched': False})   
                     
@@ -172,7 +161,7 @@ def analyzetext():
           
     except Exception:
         
-        return json.dumps({'status': 'fail', 'results': 'error en datos de ingreso'}), status.HTTP_400_BAD_REQUEST
+        return json.dumps({'status': 'fail', 'results': 'error en datos de ingreso'}),status.HTTP_400_BAD_REQUEST
 
 #OK
 @app.route('/api/analyze/file', methods=['POST'])
@@ -190,14 +179,14 @@ def analyzefile():
             result = [int(item) for item in reglas_formulario]
             aux=True
         else:
-            return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}), status.HTTP_400_BAD_REQUEST
+            return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}),status.HTTP_400_BAD_REQUEST
         
         try:
             texto=f.stream.read()       #lectura de archivo
             valor=texto.decode("utf-8") #decodificacion archivo 
             record=json.loads(valor)    #archivo es guardado en record como json
         except Exception:
-            return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}), status.HTTP_400_BAD_REQUEST
+            return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}),status.HTTP_400_BAD_REQUEST
         
         #for para guardar valores de id de reglas incluidas en adjunto, en arreglo de reglas de documento
         for i in range(len(record["rules"])):
@@ -216,8 +205,8 @@ def analyzefile():
                     print(len(data))
                     if (len(data))>0:
                         for row in data:  
-                            str = ''.join(row)
-                            rule = yara.compile(source=str) 
+                            regla_yara = ''.join(row)
+                            rule = yara.compile(source=regla_yara) 
                             matches = rule.match(data=record.get("text", "")) #validar match de regla 
                             if len(matches) > 0:  
                                 resultados.append({'rule_id': item['rule_id'], 'matched': True})
@@ -229,20 +218,18 @@ def analyzefile():
                         resultados.append({'rule_id': item['rule_id'], 'matched': False})   
                     
                     aux=True
-                except Exception as e1:
+                except Exception:
                     aux=False
                     resultados.append({'rule_id': item['rule_id'], 'matched': False})#regla existe y no match
             salida={}
             
             if aux:
                 salida=json.dumps(resultados)
-            else:
-                salida[{'mensaje':'error'}]
             return (salida), status.HTTP_201_CREATED
         else:
             return json.dumps({'status': 'fail', 'error': 'incongruencia de reglas a consultar'}),status.HTTP_400_BAD_REQUEST     
                       
-    except Exception as e:
+    except Exception:
         
         return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}),status.HTTP_400_BAD_REQUEST
 
@@ -270,9 +257,8 @@ def put_rule():
     #         return json.dumps({'status': 'ok', 'results': {"rule": matches[0].rule, "tags": list(matches[0].tags), "strings": str(matches[0].strings)}}),status.HTTP_201_CREATED
     #     else:
     #         return json.dumps({'status': 'ok', 'results': []}), status.HTTP_201_CREATED
-    except Exception as e:
-        print(str(e))
-        return json.dumps({'status': 'fail', 'results': []}), status.HTTP_400_BAD_REQUEST
+    except Exception:
+        return json.dumps({'status': 'fail', 'results': []}),status.HTTP_400_BAD_REQUEST
 
 @app.route('/api/rule', methods=['GET'])
 def get_rule():
