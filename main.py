@@ -25,10 +25,10 @@ Framework:Flask Api'''
 import collections
 import datetime
 import json
-from os import extsep, sep
+#from os import extsep, sep
 
 #from pickle import TRUE
-from tkinter.messagebox import RETRY
+#from tkinter.messagebox import RETRY
 import yara 
 import bbddsqlite3
 
@@ -145,8 +145,8 @@ def analyzetext():
                     if (len(data))>0:
                         for row in data:  
                             regla_yara = ''.join(row)
-                            rule = yara.compile(source=regla_yara) 
-                            matches = rule.match(data=record.get("text", "")) #validar match de regla 
+                            rule=yara.compile(source=regla_yara) 
+                            matches=rule.match(data=record.get("text", "")) #validar match de regla 
                             if len(matches) > 0:  
                                 resultados.append({'rule_id': item['rule_id'], 'matched': True})
                                 #regla existe y match
@@ -164,14 +164,13 @@ def analyzetext():
             
             if aux:
                 salida=json.dumps(resultados)
-            else:
-                salida[{'mensaje':'error'}]
+            
             return (salida), status.HTTP_201_CREATED  
         else:
             return json.dumps({'status': 'fail', 'results': 'Cantidad de parametros incorrectos'}), status.HTTP_400_BAD_REQUEST 
         
           
-    except Exception as e:
+    except Exception:
         
         return json.dumps({'status': 'fail', 'results': 'error en datos de ingreso'}), status.HTTP_400_BAD_REQUEST
 
@@ -197,7 +196,7 @@ def analyzefile():
             texto=f.stream.read()       #lectura de archivo
             valor=texto.decode("utf-8") #decodificacion archivo 
             record=json.loads(valor)    #archivo es guardado en record como json
-        except Exception as e1:
+        except Exception:
             return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}), status.HTTP_400_BAD_REQUEST
         
         #for para guardar valores de id de reglas incluidas en adjunto, en arreglo de reglas de documento
@@ -209,7 +208,7 @@ def analyzefile():
             aux=True
             con=bbddsqlite3.sql_connection()
             cursorObj = con.cursor()
-            for index, item in enumerate(record.get("rules",[])): #texto a analizar
+            for item in enumerate(record.get("rules",[])): #texto a analizar
                 
                 try:
                     resultado=cursorObj.execute("select regla from reglas_yara where id = ?",[item['rule_id']])
@@ -241,11 +240,11 @@ def analyzefile():
                 salida[{'mensaje':'error'}]
             return (salida), status.HTTP_201_CREATED
         else:
-            return json.dumps({'status': 'fail', 'error': 'incongruencia de reglas a consultar'}), status.HTTP_400_BAD_REQUEST     
+            return json.dumps({'status': 'fail', 'error': 'incongruencia de reglas a consultar'}),status.HTTP_400_BAD_REQUEST     
                       
     except Exception as e:
         
-        return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}), status.HTTP_400_BAD_REQUEST
+        return json.dumps({'status': 'fail', 'error': 'Parametros incorrectos'}),status.HTTP_400_BAD_REQUEST
 
 
 
@@ -339,7 +338,7 @@ def get_rule():
                                 resultado=cursorObj.execute("select id,nombre_regla,regla from reglas_yara where id = ?",(reglas_separadas[recorrer]))
                                 data=resultado.fetchall()
                                 aux=True
-                            except Exception as e2:
+                            except Exception:
                                 json_output=({reglas_separadas[recorrer]:" regla no encontrada"})
                                 salida.append(json_output)
                                 aux=False
@@ -364,7 +363,7 @@ def get_rule():
         
             
             return (json.dumps(salida))
-        except Exception as e3:
+        except Exception:
             return json.dumps({'status': 'fail', 'results': []}), status.HTTP_400_BAD_REQUEST
             
 
@@ -424,22 +423,6 @@ def idusuario():
     print(matches)
     return json.dumps(matches),status.HTTP_200_OK
 
-
-@app.route('/api/test', methods=['POST'])
-def test():
-    
-    try:
-            record = json.loads(request.data)
-            try:
-                valor=record.get("test")
-                print(valor)
-                aux=True
-            except Exception as e:
-                print(str(e))
-            return json.dumps({'status': 'fail', 'results': []}), status.HTTP_400_BAD_REQUEST # error 500
-    except Exception as e:
-        print(str(e))
-        return json.dumps({'status': 'fail', 'results': []}), status.HTTP_400_BAD_REQUEST # error 500
 
 
 app.run(debug=True)
