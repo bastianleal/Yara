@@ -21,10 +21,6 @@ Framework:Flask Api'''
 import collections
 import datetime
 import json
-#from os import extsep, sep
-
-#from pickle import TRUE
-#from tkinter.messagebox import RETRY
 import yara
 import bbddsqlite3
 
