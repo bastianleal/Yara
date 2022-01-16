@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #encoding: utf-8
 
-'''
-The Yara API Challenge
+
+'''The Yara API Challenge
 Instrucciones :
 Como equipo de seguridad informática tenemos la necesidad de buscar en textos y binarios algunos 
 patrones que pueden ir desde información sensible hasta malware. Para eso necesitamos integrar Yara
@@ -10,17 +10,15 @@ con una API que nos permita manejar reglas y analizar estos archivos o textos en
 Es importante que como esta API va a tener bastante trafico, no tenga que cargar las reglas cada vez que
 tenga que hacer un análisis. Se puede implementar con el lenguaje de programación que prefieras, frameworks
 y librerias que creas necesarios pero si es importante usar Docker para que sea reproducible facilmente
-y podamos probarlo. El challenge consta de una implementación básica y dos optativas y algunos extras.
-'''
+y podamos probarlo. El challenge consta de una implementación básica y dos optativas y algunos extras.'''
 
-'''
-Solicitado por: Mercado Libre
+
+'''Solicitado por: Mercado Libre
 Autor: Bastian Leal
 Fecha: Enero 2022
 Lenguaje: Python
 BBDD: Sqlite3
-Framework:Flask Api
-'''
+Framework:Flask Api'''
 
 #declaracion de librerias Utilizadas 
 #Framework utilizado: Flask API documentacion Oficial: https://flask.palletsprojects.com/en/2.0.x/
@@ -28,16 +26,13 @@ import collections
 import datetime
 import json
 from os import extsep, sep
-import os
-from pickle import TRUE
-from tkinter.messagebox import RETRY
-from werkzeug.utils import secure_filename
-import yara 
-import re
-import rules
-import sqlite3 , bbddsqlite3
 
-from flask import Flask, request, jsonify
+#from pickle import TRUE
+from tkinter.messagebox import RETRY
+import yara 
+import bbddsqlite3
+
+from flask import Flask, request
 from flask_api import status
 
 app = Flask(__name__)
@@ -78,15 +73,16 @@ def rule():
             try:
                 rule = yara.compile(source=record.get("rule"))
                 aux=True
-            except Exception as e1:
-                    aux=False
+            except Exception:
+                aux=False
+                return json.dumps({'status': 'ok', 'error': 'Problema al compilar Regla Yara'}), status.HTTP_400_BAD_REQUEST
                     
             #control de error en compilacion de Match en regla Yara
             if aux:
                 try:
-                    matches = rule.match(data=record.get("name"))
+                    rule.match(data=record.get("name"))
                     aux=True
-                except Exception as e2:
+                except Exception:
                     aux=False
                     # en caso de no ejecutar la funcion match para la regla declarada, capturamos el error
                     return json.dumps({'status': 'fail', 'error': 'Json fuera de formato'}), status.HTTP_400_BAD_REQUEST
@@ -102,26 +98,26 @@ def rule():
                 regla=record.get("rule")
                 try: 
                     #ejecucion en BBDD segun datos ingresados, en modelo se incluye para las variables not null and unique
-                    id=(cursorObj.execute("INSERT INTO reglas_yara(nombre_regla,regla,fecha_creacion,fecha_completa) VALUES(?,?,?,?)",(nombre_regla,regla,fecha,fecha_completa)).lastrowid)
+                    last_id=(cursorObj.execute("INSERT INTO reglas_yara(nombre_regla,regla,fecha_creacion,fecha_completa) VALUES(?,?,?,?)",(nombre_regla,regla,fecha,fecha_completa)).lastrowid)
                     aux=True
                     con.commit()
                     con.close()
                 #captura error de insert en BBDD
-                except Exception as e3:
+                except Exception:
                     aux=False
                     return json.dumps({'status': 'fail', 'error': 'error en insert de BBDD Regla ya creada (nombre y regla unicos)'}), status.HTTP_409_CONFLICT
                     
             if aux:
                     salida={}
-                    salida['id']=id
+                    salida['id']=last_id
                     salida['nombre_regla']=nombre_regla
                     salida['regla']=regla
                     
-                    return json.dumps(salida)
+                    return json.dumps(salida), status.HTTP_200_OK
         else:
             return json.dumps({'status': 'fail', 'results': 'Cantidad de parametros incorrectos'}), status.HTTP_400_BAD_REQUEST # error 500
 
-    except Exception as e:
+    except Exception:
         return json.dumps({'status': 'fail', 'results': 'Parametros incorrectos'}), status.HTTP_400_BAD_REQUEST # error 500
 
 #OK
@@ -140,7 +136,7 @@ def analyzetext():
             
             con=bbddsqlite3.sql_connection()
             cursorObj = con.cursor()
-            for index, item in enumerate(record.get("rules",[])): #texto a analizar
+            for item in enumerate(record.get("rules",[])): #texto a analizar
                 
                 try:
                     resultado=cursorObj.execute("select regla from reglas_yara where id = ?",[item['rule_id']])
@@ -148,8 +144,8 @@ def analyzetext():
                     print(len(data))
                     if (len(data))>0:
                         for row in data:  
-                            str = ''.join(row)
-                            rule = yara.compile(source=str) 
+                            regla_yara = ''.join(row)
+                            rule = yara.compile(source=regla_yara) 
                             matches = rule.match(data=record.get("text", "")) #validar match de regla 
                             if len(matches) > 0:  
                                 resultados.append({'rule_id': item['rule_id'], 'matched': True})
@@ -161,7 +157,7 @@ def analyzetext():
                         resultados.append({'rule_id': item['rule_id'], 'matched': False})   
                     
                     aux=True
-                except Exception as e1:
+                except Exception:
                     aux=False
                     resultados.append({'rule_id': item['rule_id'], 'matched': False})#regla existe y no match
             salida={}
@@ -326,7 +322,7 @@ def get_rule():
                     reglas_noduplicado=id.split(sep=',')
                     reglas_set=set(reglas_noduplicado)
                     listanueva=list(reglas_set)
-                    reglas_separadas=listanueva #se contruye nueva lista con el objetivo de eliminar los duplicados en la busqueda a
+                    reglas_separadas=listanueva #se contruye nueva lista con el objetivo de eliminar los duplicados en la busqueda
                     
                     recorrer=0
                     for regla in reglas_separadas:
